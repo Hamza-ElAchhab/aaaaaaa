@@ -1,10 +1,28 @@
 import json
 from llm_sdk.llm_sdk import Small_LLM_Model
+import json
+import sys
 
 
-active = True
-if active:
-    model = Small_LLM_Model()
+
+
+model = Small_LLM_Model()
+
+
+
+
+
+def load_voca():
+    with open(model.get_path_to_vocab_file(), "r") as f:
+        data_str = f.read()
+        str_id = json.loads(data_str)
+    id_str = {}
+    for s, i in str_id.items():
+        id_str[i] = s
+    return str_id, id_str
+
+
+str_to_id ,id_to_str = load_voca()
 
 
 
@@ -89,7 +107,8 @@ ids_of_json = []
 state = "OPEN"
 
 while True:
+    pass
 
-    
 
 
+print("Hello World\n")
