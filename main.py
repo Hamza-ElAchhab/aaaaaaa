@@ -1,14 +1,11 @@
 import json
 from llm_sdk.llm_sdk import Small_LLM_Model
 import json
-import sys
-
+import numpy
 
 
 
 model = Small_LLM_Model()
-
-
 
 
 
@@ -84,6 +81,23 @@ create_data_works()
 
 
 
+def masking(logits, alloweds=None):
+
+    arr_logits = numpy.array(logits, numpy.float64)
+
+    mask = numpy.full_like(arr_logits, -numpy.inf)
+
+    if alloweds == None:
+        mask = numpy.full_like(arr_logits, 0.0)
+    else:
+        mask[list(alloweds)] = 0.0
+
+    return int(numpy.argmax((arr_logits + mask)))
+
+
+
+
+
 
 prompt = "What is the sum of 2 and 3?"
 
@@ -105,10 +119,112 @@ ids_of_json = []
 
 
 state = "OPEN"
+current_func_name = ""
+
+
 
 while True:
-    pass
+    
+    if state == "OPEN":
+        ids_of_json.append(str_to_id["{"])
+        ids_of_prompt_json.append(str_to_id["{"])
+        state = "NAME"
+        continue
+
+
+    if state == "NAME":
+        lst = model.encode('"name"')[0].tolist()
+        for ele in lst:
+            ids_of_prompt_json.append(ele)
+            ids_of_json.append(ele)
+        state = "COLON1"
+        continue
+
+
+    if state == "COLON1":
+        ids_of_json.append(str_to_id[":"])
+        ids_of_prompt_json.append(str_to_id[":"])
+        state = "FUN_NAME"
+        continue
+
+
+    if state == "FUN_NAME":
+        buffer = ""
+        functions_encoded = []
+        for n in func_names_list:
+            functions_encoded.append(model.encode(f'"{n}"')[0].tolist())
+
+        pos = 0
+        while True:
+            alloweds = set()
+
+            for lst in functions_encoded:
+                alloweds.add(lst[pos])
+
+
+            logits = model.get_logits_from_input_ids(ids_of_prompt_json)
+            next_id = masking(logits, alloweds)
+
+            ids_of_json.append(next_id)
+            ids_of_prompt_json.append(next_id)
+            buffer += (model.decode(next_id))
+            
+            functions_encoded = [
+                lst for lst in functions_encoded if len(lst) > pos and lst[pos] == next_id
+            ]
+
+            pos += 1
+
+            if len(functions_encoded) == 1 and pos == len(functions_encoded[0]):
+                break
+
+        current_func_name = buffer[1:-1]
+        state = "COMMA"
+        continue
+
+
+    if state == "COMMA":
+        ids_of_json.append(str_to_id[","])
+        ids_of_prompt_json.append(str_to_id[","])
+        state = "PARAMETERS"
+        continue
+
+
+    if state == "PARAMETERS":
+        lst = model.encode('"parameters"')[0].tolist()
+        for ele in lst:
+            ids_of_prompt_json.append(ele)
+            ids_of_json.append(ele)
+        state = "COLON2"
+        continue
+
+
+    if state == "COLON2":
+        ids_of_json.append(str_to_id[":"])
+        ids_of_prompt_json.append(str_to_id[":"])
+        state = "OPEN_PARAMETER"
+        continue
+
+
+    if state == "OPEN_PARAMETER":
+        ids_of_json.append(str_to_id["{"])
+        ids_of_prompt_json.append(str_to_id["{"])
+        state = "KEYS_PARAMETER"
+        continue
+
+
+    if state == "KEYS_PARAMETER":
+        break
 
 
 
-print("Hello World\n")
+
+
+
+
+
+
+
+print(model.decode(ids_of_json))
+
+print(current_func_name)
