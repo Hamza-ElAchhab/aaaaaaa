@@ -119,8 +119,8 @@ ids_of_json = []
 
 
 state = "OPEN"
-current_func_name = ""
-
+current_key = ""
+done = []
 
 
 while True:
@@ -178,7 +178,7 @@ while True:
             if len(functions_encoded) == 1 and pos == len(functions_encoded[0]):
                 break
 
-        current_func_name = buffer[1:-1]
+        parameters = func_parameters[buffer[1:-1]]
         state = "COMMA"
         continue
 
@@ -214,6 +214,35 @@ while True:
 
 
     if state == "KEYS_PARAMETER":
+        current_key = (list(parameters.keys())[len(done)])
+
+        for ele in model.encode(f'"{current_key}"')[0].tolist():
+            ids_of_json.append(ele)
+            ids_of_prompt_json.append(ele)
+        
+        state = "COLON3"
+        continue
+
+
+    if state == "COLON3":
+        ids_of_json.append(str_to_id[":"])
+        ids_of_prompt_json.append(str_to_id[":"])
+        state = "VALUES"
+        continue
+
+
+    if state == "VALUES":
+
+        while True:
+
+            alloweds = set()
+            typee = (parameters.get(current_key, "string"))
+
+            if typee == "number":
+                print("koko")
+        
+
+
         break
 
 
@@ -225,6 +254,6 @@ while True:
 
 
 
-print(model.decode(ids_of_json))
 
-print(current_func_name)
+
+print(model.decode(ids_of_json))
