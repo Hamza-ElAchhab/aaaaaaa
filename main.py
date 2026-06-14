@@ -22,27 +22,37 @@ model = AutoModelForCausalLM.from_pretrained(
 
 
 context = """
-the small baby's name is koko.
+- Ali is a student at a computer science school.
+He is working on a project about Retrieval-Augmented Generation (RAG).
+His project uses Qwen model and BM25 for searching code snippets.
+Ali lives in Morocco.
+His favorite programming language is Python.
 """
-question = "What is the name of small baby?"
+question = "What project is Ali working on and which model does he use?"
+
+
+
 
 fully_prompt = f"""
+You are a strict question answering system for the vLLM codebase.
+
+Rules:
+- Use ONLY the provided context.
+- Do NOT use any external knowledge.
+- Do NOT explain your answer.
+- Return ONLY one short answer sentence.
+- If the answer is not in the context, reply exactly:
+I could not find the answer in the retrieved sources.
+
 Context:
 {context}
 
 Question:
 {question}
 
-Instructions:
-- Answer ONLY from the context.
-- If the answer is not in the context, say:
-  "I don't know based on the provided context."
-
 Answer:
+
 """
-print(f"You Give Him : {len(tokenizer.encode(fully_prompt))} token\n\n")
-
-
 
 
 
@@ -61,7 +71,7 @@ inputs = tokenizer(
 with torch.no_grad():
     outputs = model.generate(
         **inputs,
-        max_new_tokens=50,
+        max_new_tokens=100,
         temperature=0.0,                       #random
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,    #just for ignore some wornings
@@ -80,53 +90,3 @@ answer = tokenizer.decode(new_tokens, skip_special_tokens=True)
 
 print(answer.strip())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#in project :
-# prompt = f"""
-# You are answering questions about the vLLM codebase.
-
-# Use ONLY the provided context.
-
-# If the answer is not present in the context,
-# reply exactly:
-
-# I could not find the answer in the retrieved sources.
-
-# Context:
-# {context}
-
-# Question:
-# {question}
-
-# Answer:
-# """
-
-
-
-# prompt = f"""
-# Context:
-# {context}
-
-# Question:
-# {question}
-
-# Instructions:
-# - Answer ONLY from the context.
-# - If the answer is not in the context, say:
-#   "I don't know based on the provided context."
-
-# Answer:
-# """
